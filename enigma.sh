@@ -8,13 +8,12 @@ if [ "$1" = "-g" ]; then
     echo "            JUEGO 'EL ENIGMA' - MODO INFORMACIÓN          "
     echo "=========================================================="
     echo "Integrantes del grupo: [Nombre 1] y [Nombre 2]"
-    echo "Estrategia IA propia (ESTRATEGIA=2): [Explicación aquí]"
-    echo "Estadística libre: [Explicación aquí]"
+    echo "Estrategia IA propia (ESTRATEGIA=2): Frecuencia de letras."
+    echo "Estadística libre: Porcentaje de rondas desiertas globales."
     echo "=========================================================="
     exit 0
 fi
 
-# Si se introduce un argumento distinto a -g, se notifica el uso correcto
 if [ $# -gt 0 ]; then
     echo "Sintaxis incorrecta. Modo correcto de uso: $0 [-g]"
     exit 1
@@ -23,7 +22,6 @@ fi
 # ==============================================================================
 # 2. VALIDACIÓN PREVIA OBLIGATORIA
 # ==============================================================================
-# Comprueba la existencia de los archivos obligatorios antes de mostrar el menú
 if [ ! -f "config.cfg" ] || [ ! -f "frases.dat" ]; then
     echo "Error: Los archivos 'config.cfg' o 'frases.dat' no existen o no son válidos."
     exit 1
@@ -43,33 +41,60 @@ while [ "$OPCION" != "S" ] && [ "$OPCION" != "s" ]; do
     echo "E) ESTADÍSTICAS"
     echo "S) SALIR"
     echo -n "Introduzca una opción >> "
-    read OPCION
+    read -r OPCION
 
     case $OPCION in
         C|c)
             echo ""
             echo "--- C) CONFIGURACIÓN ---"
-            echo "[Aquí meteremos el código para modificar config.cfg]"
+            echo "[Próximamente: Modificar config.cfg]"
             ;;
         J|j)
             echo ""
             echo "--- J) JUGAR ---"
-            echo "[Aquí meteremos la lógica de la partida y las rondas]"
+            echo "[Próximamente: Motor de juego]"
             ;;
         F|f)
             echo ""
-            echo "--- F) FRASES ---"
-            echo "[Aquí meteremos el código para ver y añadir frases a frases.dat]"
+            echo "--- F) GESTIÓN DE FRASES ---"
+            echo "1. Consultar frases"
+            echo "2. Añadir nueva frase"
+            echo -n "Seleccione una opción (1 o 2) >> "
+            read -r OPCION_FRASES
+
+            if [ "$OPCION_FRASES" = "1" ]; then
+                echo ""
+                echo "Listado de frases disponibles:"
+                echo "-------------------------------"
+                cat frases.dat
+                echo "-------------------------------"
+            elif [ "$OPCION_FRASES" = "2" ]; then
+                echo ""
+                echo -n "Introduzca la categoría (REFRAN, PELICULA, MUSICA, DEPORTE) >> "
+                read -r NUEVA_CAT
+                echo -n "Introduzca la nueva frase >> "
+                read -r NUEVA_FRASE
+
+                # Pasamos ambos textos a mayúsculas
+                NUEVA_CAT_MAYUS=$(echo "$NUEVA_CAT" | tr '[:lower:]' '[:upper:]')
+                NUEVA_FRASE_MAYUS=$(echo "$NUEVA_FRASE" | tr '[:lower:]' '[:upper:]')
+
+                # Guardamos la frase en el archivo
+                echo "${NUEVA_CAT_MAYUS}:${NUEVA_FRASE_MAYUS}" >> frases.dat
+                echo "Frase añadida correctamente."
+            else
+                echo "Opción incorrecta."
+            fi
             ;;
         E|e)
             echo ""
             echo "--- E) ESTADÍSTICAS ---"
-            echo "[Aquí meteremos el código para procesar el log]"
+            echo "[Próximamente: Procesar log]"
             ;;
         S|s)
             echo ""
-            echo "Eliminando archivos temporales y devolviendo el control al sistema..."
-            rm -f *.tmp
+            echo "Eliminando archivos temporales..."
+            rm -f ./*.tmp 2>/dev/null
             exit 0
             ;;
         *)
@@ -80,15 +105,5 @@ while [ "$OPCION" != "S" ] && [ "$OPCION" != "s" ]; do
 
     echo ""
     echo "Pulse una tecla para continuar..."
-    read -n 1
+    read -r -n 1
 done
-```
-
----
-
-### ¿Cómo probar esta base en tu consola?
-
-1. Guarda el archivo como `enigma.sh`.
-2. Dale permisos de ejecución en la terminal[cite: 1]:
-   ```bash
-   chmod 755 enigma.sh
