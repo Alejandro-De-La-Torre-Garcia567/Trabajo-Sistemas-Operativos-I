@@ -28,14 +28,14 @@ function iniciar {
     OPCION=""
     while [ "$OPCION" != "S" ] && [ "$OPCION" != "s" ]; do
         clear
-        echo "================== JUEGO “EL ENIGMA” ================="
+        echo '================== JUEGO “EL ENIGMA” ================='
         echo "C) CONFIGURACIÓN"
         echo "J) JUGAR"
         echo "F) FRASES"
         echo "E) ESTADÍSTICAS"
         echo "S) SALIR"
         echo -n "Introduzca una opción >> "
-        if ! read OPCION; then
+        if ! read -r OPCION; then
             echo
             echo "Fin de la entrada. El programa termina."
             return 0; fi
@@ -67,7 +67,7 @@ function iniciar {
     done
 }
 function leer {
-    if ! read; then
+    if ! read -r; then
         echo
         echo "Fin de la entrada. El programa termina."
         exit 0; fi
@@ -259,7 +259,7 @@ function preparar_frases_disponibles {
 }
 function pausa {
     echo "Pulse una tecla para continuar."
-    if ! read -n 1; then
+    if ! read -r -n 1; then
         echo
         echo "Fin de la entrada. El programa termina."
         exit 0; fi
@@ -295,15 +295,16 @@ function guardar_configuracion {
     if test ! -w config.cfg; then
         echo "Error: no se puede escribir config.cfg."
         return 1; fi
-    echo "JUGADORES=${CONFIG[0]}" > config.cfg
-    echo "RONDAS=${CONFIG[1]}" >> config.cfg
-    echo "PVIDA=${CONFIG[2]}" >> config.cfg
-    echo "PFALLO=${CONFIG[3]}" >> config.cfg
-    echo "PRESPUESTA=${CONFIG[4]}" >> config.cfg
-    echo "CATEGORIAS=${CONFIG[5]}" >> config.cfg
-    echo "ESTRATEGIA=${CONFIG[6]}" >> config.cfg
-    echo "LOG=${CONFIG[7]}" >> config.cfg
-    if test $? -ne 0; then
+    if ! {
+        echo "JUGADORES=${CONFIG[0]}"
+        echo "RONDAS=${CONFIG[1]}"
+        echo "PVIDA=${CONFIG[2]}"
+        echo "PFALLO=${CONFIG[3]}"
+        echo "PRESPUESTA=${CONFIG[4]}"
+        echo "CATEGORIAS=${CONFIG[5]}"
+        echo "ESTRATEGIA=${CONFIG[6]}"
+        echo "LOG=${CONFIG[7]}"
+    } > config.cfg; then
         echo "Error al guardar config.cfg."
         return 1; fi
     leer_configuracion
@@ -582,8 +583,7 @@ function registrar_partida {
         else
             RONDAS_GUARDADAS[$INDICE]="-"; fi
     done
-    echo "$FECHA|$HORA|$TIEMPO|$JUGADORES|$RONDAS|$PVIDA|$PFALLO|$PRESPUESTA|$CATEGORIAS|$ESTRATEGIA|$GANADOR|${RONDAS_GUARDADAS[1]}|${RONDAS_GUARDADAS[2]}|${RONDAS_GUARDADAS[3]}|${RONDAS_GUARDADAS[4]}|$TOTAL_LETRAS|$FRASES_RESUELTAS" >> "$ARCHIVO_LOG"
-    if test $? -eq 0; then
+    if echo "$FECHA|$HORA|$TIEMPO|$JUGADORES|$RONDAS|$PVIDA|$PFALLO|$PRESPUESTA|$CATEGORIAS|$ESTRATEGIA|$GANADOR|${RONDAS_GUARDADAS[1]}|${RONDAS_GUARDADAS[2]}|${RONDAS_GUARDADAS[3]}|${RONDAS_GUARDADAS[4]}|$TOTAL_LETRAS|$FRASES_RESUELTAS" >> "$ARCHIVO_LOG"; then
         echo "Resultado añadido al LOG: $RUTA_LOG"
     else
         echo "Error al escribir el resultado en el LOG."
