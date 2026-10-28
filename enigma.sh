@@ -28,7 +28,7 @@ function iniciar {
     OPCION=""
     while [ "$OPCION" != "S" ] && [ "$OPCION" != "s" ]; do
         clear
-        echo "JUEGO \"EL ENIGMA\""
+        echo "================== JUEGO “EL ENIGMA” ================="
         echo "C) CONFIGURACIÓN"
         echo "J) JUGAR"
         echo "F) FRASES"
@@ -143,9 +143,13 @@ function leer_configuracion {
     done
     ERROR=0
     REPLY=""
-    while read || test -n "$REPLY"; do
+    while IFS= read -r || test -n "$REPLY"; do
         LINEA="$REPLY"
+        case "$LINEA" in
+            *$'\r') LINEA="${LINEA%$'\r'}" ;; esac
         REPLY=""
+        if test -z "$LINEA"; then
+            continue; fi
         case "$LINEA" in
             *=*) PARAMETRO="${LINEA%%=*}"; VALOR="${LINEA#*=}" ;;
             *) echo "Error: falta = en config.cfg."; ERROR=1; PARAMETRO="" ;; esac
@@ -206,9 +210,13 @@ function leer_frases {
     CATEGORIAS_FRASE=()
     ERROR=0
     REPLY=""
-    while read || test -n "$REPLY"; do
+    while IFS= read -r || test -n "$REPLY"; do
         LINEA="$REPLY"
+        case "$LINEA" in
+            *$'\r') LINEA="${LINEA%$'\r'}" ;; esac
         REPLY=""
+        if test -z "$LINEA"; then
+            continue; fi
         case "$LINEA" in
             *:*) CATEGORIA="${LINEA%%:*}"; TEXTO="${LINEA#*:}" ;;
             *) echo "Error: falta : en frases.dat."; ERROR=1; CATEGORIA="" ;; esac
@@ -562,7 +570,7 @@ function registrar_partida {
     if ! preparar_log; then
         echo "Error: no se pudo guardar el resultado de la partida."
         return 1; fi
-    CABECERA="FECHA|HORA|DURACION|JUGADORES|RONDAS|PVIDA|PFALLO|PRESPUESTA|CATEGORIAS|ESTRATEGIA|GANADOR|RONDAS_GANADAS_J1|RONDAS_GANADAS_J2|RONDAS_GANADAS_J3|RONDAS_GANADAS_J4|LETRAS_UTILIZADAS|FRASES_RESUELTAS"
+    CABECERA="FECHA|HORA|TPO|JUGADORES|RONDAS|PVIDA|PFALLO|PRESPUESTA|CATEGORIAS|ESTRATEGIA|GANADOR|RONDAS_GANADAS_J1|RONDAS_GANADAS_J2|RONDAS_GANADAS_J3|RONDAS_GANADAS_J4|LETRAS_UTILIZADAS|FRASES_RESUELTAS"
     if test ! -s "$ARCHIVO_LOG"; then
         echo "$CABECERA" >> "$ARCHIVO_LOG"; fi
     FECHA=$(date '+%d%m%y')
@@ -716,10 +724,11 @@ function ver_estadisticas {
     for INDICE in 0 1 2; do
         VECES_ESTRATEGIA[$INDICE]=0
     done
-    while IFS='|' read FECHA HORA DURACION NUM_JUGADORES NUM_RONDAS_LOG VIDA_LOG PFALLO_LOG PRESPUESTA_LOG CATEGORIA ESTRATEGIA_LOG GANADOR_LOG RONDAS_J1 RONDAS_J2 RONDAS_J3 RONDAS_J4 LETRAS_LOG FRASES_LOG; do
+    while IFS='|' read -r FECHA HORA TPO NUM_JUGADORES NUM_RONDAS_LOG VIDA_LOG PFALLO_LOG PRESPUESTA_LOG CATEGORIA ESTRATEGIA_LOG GANADOR_LOG RONDAS_J1 RONDAS_J2 RONDAS_J3 RONDAS_J4 LETRAS_LOG FRASES_LOG; do
+        FRASES_LOG="${FRASES_LOG%$'\r'}"
         if test "$FECHA" != "FECHA" -a -n "$FECHA"; then
             REGISTRO_VALIDO=1
-            for NUMERO in "$DURACION" "$NUM_JUGADORES" "$NUM_RONDAS_LOG" "$VIDA_LOG" "$PFALLO_LOG" "$PRESPUESTA_LOG" "$CATEGORIA" "$ESTRATEGIA_LOG" "$GANADOR_LOG" "$LETRAS_LOG" "$FRASES_LOG"; do
+            for NUMERO in "$TPO" "$NUM_JUGADORES" "$NUM_RONDAS_LOG" "$VIDA_LOG" "$PFALLO_LOG" "$PRESPUESTA_LOG" "$CATEGORIA" "$ESTRATEGIA_LOG" "$GANADOR_LOG" "$LETRAS_LOG" "$FRASES_LOG"; do
                 if ! entero "$NUMERO"
                 then REGISTRO_VALIDO=0; fi
             done
@@ -742,7 +751,7 @@ function ver_estadisticas {
                 done; fi
             if test "$REGISTRO_VALIDO" -eq 1; then
                 TOTAL_PARTIDAS=$((TOTAL_PARTIDAS + 1))
-                TIEMPO_TOTAL=$((TIEMPO_TOTAL + DURACION))
+                TIEMPO_TOTAL=$((TIEMPO_TOTAL + TPO))
                 RONDAS_TOTAL=$((RONDAS_TOTAL + NUM_RONDAS_LOG))
                 LETRAS_TOTAL=$((LETRAS_TOTAL + LETRAS_LOG))
                 VECES_ESTRATEGIA[$ESTRATEGIA_LOG]=$((VECES_ESTRATEGIA[$ESTRATEGIA_LOG] + 1))
@@ -755,14 +764,14 @@ function ver_estadisticas {
                         PARTIDAS_JUGADAS[$INDICE]=$((PARTIDAS_JUGADAS[$INDICE] + 1)); fi
                 done
                 if test "$TOTAL_PARTIDAS" -eq 1; then
-                    TIEMPO_MINIMO="$DURACION"; TIEMPO_MAXIMO="$DURACION"
+                    TIEMPO_MINIMO="$TPO"; TIEMPO_MAXIMO="$TPO"
                     FECHA_MINIMA="$FECHA"; HORA_MINIMA="$HORA"
                     FECHA_MAXIMA="$FECHA"; HORA_MAXIMA="$HORA"
                 else
-                    if test "$DURACION" -lt "$TIEMPO_MINIMO"
-                    then TIEMPO_MINIMO="$DURACION"; FECHA_MINIMA="$FECHA"; HORA_MINIMA="$HORA"; fi
-                    if test "$DURACION" -gt "$TIEMPO_MAXIMO"
-                    then TIEMPO_MAXIMO="$DURACION"; FECHA_MAXIMA="$FECHA"; HORA_MAXIMA="$HORA"; fi; fi; fi; fi
+                    if test "$TPO" -lt "$TIEMPO_MINIMO"
+                    then TIEMPO_MINIMO="$TPO"; FECHA_MINIMA="$FECHA"; HORA_MINIMA="$HORA"; fi
+                    if test "$TPO" -gt "$TIEMPO_MAXIMO"
+                    then TIEMPO_MAXIMO="$TPO"; FECHA_MAXIMA="$FECHA"; HORA_MAXIMA="$HORA"; fi; fi; fi; fi
     done < "$ARCHIVO_LOG"
     if test "$TOTAL_PARTIDAS" -eq 0; then
         echo "Todavía no hay partidas registradas."
