@@ -1,5 +1,6 @@
 #!/bin/bash
 LETRAS="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 function iniciar {
     if test "$#" -eq 1 -a "$1" = "-g"; then
         echo "=========================================================="
@@ -26,9 +27,11 @@ function iniciar {
     if ! leer_frases; then
         return 1; fi
     OPCION=""
-    while [ "$OPCION" != "S" ] && [ "$OPCION" != "s" ]; do
+    while test "$OPCION" != "S" -a "$OPCION" != "s"; do
         clear
-        echo '================== JUEGO “EL ENIGMA” ================='
+        echo '=================='
+        echo 'JUEGO “EL ENIGMA”'
+        echo '=================='
         echo "C) CONFIGURACIÓN"
         echo "J) JUGAR"
         echo "F) FRASES"
@@ -62,7 +65,7 @@ function iniciar {
             *)
                 echo
                 echo "Opción no válida. Inténtelo de nuevo." ;; esac
-        if [ "$OPCION" != "S" ] && [ "$OPCION" != "s" ]; then
+        if test "$OPCION" != "S" -a "$OPCION" != "s"; then
             pausa; fi
     done
 }
@@ -142,12 +145,11 @@ function leer_configuracion {
         PARAMETROS_VISTOS[$POSICION]=0
     done
     ERROR=0
-    REPLY=""
-    while IFS= read -r || test -n "$REPLY"; do
-        LINEA="$REPLY"
+    LINEA=""
+    while read -r LINEA || test -n "$LINEA"; do
         case "$LINEA" in
             *$'\r') LINEA="${LINEA%$'\r'}" ;; esac
-        REPLY=""
+
         if test -z "$LINEA"; then
             continue; fi
         case "$LINEA" in
@@ -164,6 +166,7 @@ function leer_configuracion {
             PARAMETROS_VISTOS[$POSICION]=1
             CONFIG[$POSICION]="$VALOR"
         fi
+        LINEA=""
     done < config.cfg
     for PARAMETRO in JUGADORES RONDAS PVIDA PFALLO PRESPUESTA CATEGORIAS ESTRATEGIA LOG; do
         buscar_parametro "$PARAMETRO"
@@ -209,12 +212,11 @@ function leer_frases {
     FRASES=()
     CATEGORIAS_FRASE=()
     ERROR=0
-    REPLY=""
-    while IFS= read -r || test -n "$REPLY"; do
-        LINEA="$REPLY"
+    LINEA=""
+    while read -r LINEA || test -n "$LINEA"; do
         case "$LINEA" in
             *$'\r') LINEA="${LINEA%$'\r'}" ;; esac
-        REPLY=""
+
         if test -z "$LINEA"; then
             continue; fi
         case "$LINEA" in
@@ -238,6 +240,7 @@ function leer_frases {
             if test "$REPETIDA" -eq 0; then
                 FRASES[${#FRASES[@]}]="$TEXTO"
                 CATEGORIAS_FRASE[${#CATEGORIAS_FRASE[@]}]="$CATEGORIA"; fi; fi
+        LINEA=""
     done < frases.dat
     if test "$ERROR" -eq 1; then
         echo "Error: frases.dat no es válido."
@@ -296,14 +299,10 @@ function guardar_configuracion {
         echo "Error: no se puede escribir config.cfg."
         return 1; fi
     if ! {
-        echo "JUGADORES=${CONFIG[0]}"
-        echo "RONDAS=${CONFIG[1]}"
-        echo "PVIDA=${CONFIG[2]}"
-        echo "PFALLO=${CONFIG[3]}"
-        echo "PRESPUESTA=${CONFIG[4]}"
-        echo "CATEGORIAS=${CONFIG[5]}"
-        echo "ESTRATEGIA=${CONFIG[6]}"
-        echo "LOG=${CONFIG[7]}"
+        for PARAMETRO in JUGADORES RONDAS PVIDA PFALLO PRESPUESTA CATEGORIAS ESTRATEGIA LOG; do
+            buscar_parametro "$PARAMETRO"
+            echo "$PARAMETRO=${CONFIG[$POSICION]}"
+        done
     } > config.cfg; then
         echo "Error al guardar config.cfg."
         return 1; fi
@@ -316,9 +315,9 @@ function editar_configuracion {
         echo "$PARAMETRO=${CONFIG[$POSICION]}"
     done
     echo "Intro conserva el valor actual."
-    pedir_numero PFALLO "${CONFIG[3]}" 5 "$((CONFIG[4] - 1))"
+    pedir_numero PFALLO "${CONFIG[3]}" 5 10
     CONFIG[3]="$DATO_PEDIDO"
-    pedir_numero PRESPUESTA "${CONFIG[4]}" "$((CONFIG[3] + 1))" "$((CONFIG[2] - 1))"
+    pedir_numero PRESPUESTA "${CONFIG[4]}" "$((CONFIG[3] + 1))" 99
     CONFIG[4]="$DATO_PEDIDO"
     pedir_numero PVIDA "${CONFIG[2]}" "$((CONFIG[4] + 1))" 100
     CONFIG[2]="$DATO_PEDIDO"
@@ -363,7 +362,7 @@ function anadir_frase {
     leer
     mayusculas "$REPLY"
     FRASE_NUEVA="$MAYUS"
-    CATEGORIA_NUEVA="$CATEGORIA"
+
     if ! frase_correcta "$FRASE_NUEVA"; then
         echo "Frase no válida. Use letras sin acentos ni caracteres especiales."
         return; fi
@@ -378,7 +377,7 @@ function anadir_frase {
     done
     if test ! -w frases.dat; then
         echo "Error: no se puede escribir frases.dat."
-    elif echo "$CATEGORIA_NUEVA:$FRASE_NUEVA" >> frases.dat; then
+    elif echo "$CATEGORIA:$FRASE_NUEVA" >> frases.dat; then
         echo "Frase añadida."
         leer_frases
     else
@@ -403,12 +402,8 @@ function menu_frases {
     done
 }
 function preparar_log {
-    case "$RUTA_LOG" in
-        /*) ARCHIVO_LOG="$RUTA_LOG" ;;
-        *) ARCHIVO_LOG="$CARPETA/$RUTA_LOG" ;; esac
-    case "$ARCHIVO_LOG" in
-        */*) DIR_LOG="${ARCHIVO_LOG%/*}" ;;
-        *) DIR_LOG="$CARPETA" ;; esac
+    buscar_ruta_log
+    DIR_LOG="${ARCHIVO_LOG%/*}"
     if test -z "$DIR_LOG"; then
         DIR_LOG="/"; fi
     if test ! -d "$DIR_LOG"; then
@@ -543,29 +538,30 @@ function comprobar_respuesta {
         siguiente_jugador; fi
 }
 function letra_de_ia {
-    if test "$ESTRATEGIA" -eq 0; then
-        ORDEN_LETRAS="$LETRAS"
-    elif test "$ESTRATEGIA" -eq 2; then
-        ORDEN_LETRAS="EAOSRNIDLCTUMPBGVYQHFJZXKW"
-    else
-        ORDEN_LETRAS=""
-        while test -z "$ORDEN_LETRAS"; do
+    LETRA_IA=""
+    if test "$ESTRATEGIA" -eq 1; then
+        while test -z "$LETRA_IA"; do
             AZAR=$((RANDOM % ${#LETRAS}))
             LETRA_CANDIDATA="${LETRAS:$AZAR:1}"
             if ! letra_ya_usada "$LETRA_CANDIDATA"; then
-                ORDEN_LETRAS="$LETRA_CANDIDATA"; fi
-        done; fi
-    if test "$ESTRATEGIA" -eq 1; then
-        LETRA_IA="$ORDEN_LETRAS"
+                LETRA_IA="$LETRA_CANDIDATA"
+            fi
+        done
     else
+        if test "$ESTRATEGIA" -eq 0; then
+            ORDEN_LETRAS="$LETRAS"
+        else
+            ORDEN_LETRAS="EAOSRNIDLCTUMPBGVYQHFJZXKW"
+        fi
         POS=0
-        LETRA_IA=""
         while test "$POS" -lt "${#ORDEN_LETRAS}" -a -z "$LETRA_IA"; do
             LETRA_CANDIDATA="${ORDEN_LETRAS:$POS:1}"
             if ! letra_ya_usada "$LETRA_CANDIDATA"; then
-                LETRA_IA="$LETRA_CANDIDATA"; fi
+                LETRA_IA="$LETRA_CANDIDATA"
+            fi
             POS=$((POS + 1))
-        done; fi
+        done
+    fi
 }
 function registrar_partida {
     if ! preparar_log; then
@@ -650,7 +646,7 @@ function jugar {
                     echo -n "Introduzca una opción >> "
                     leer
                     case "$REPLY" in
-                        A|a|L|l) pedir_letra; comprobar_letra ;;
+                        A|a) pedir_letra; comprobar_letra ;;
                         R|r) pedir_respuesta; comprobar_respuesta ;;
                         *) echo "Opción no válida. Conserva el turno." ;; esac
                 else
@@ -833,4 +829,3 @@ function buscar_ruta_log {
         *) ARCHIVO_LOG="$CARPETA/$RUTA_LOG" ;; esac
 }
 iniciar "$@"
-exit $?
