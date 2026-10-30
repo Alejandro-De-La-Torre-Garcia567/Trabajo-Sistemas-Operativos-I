@@ -354,6 +354,7 @@ function anadir_frase {
     leer
     mayusculas "$REPLY"
     CATEGORIA="$MAYUS"
+    CATEGORIA_NUEVA="$CATEGORIA"
     nivel_categoria "$CATEGORIA"
     if test "$NIVEL" -eq 0; then
         echo "Categoría no válida."
@@ -377,7 +378,7 @@ function anadir_frase {
     done
     if test ! -w frases.dat; then
         echo "Error: no se puede escribir frases.dat."
-    elif echo "$CATEGORIA:$FRASE_NUEVA" >> frases.dat; then
+    elif echo "$CATEGORIA_NUEVA:$FRASE_NUEVA" >> frases.dat; then
         echo "Frase añadida."
         leer_frases
     else
