@@ -378,11 +378,18 @@ function anadir_frase {
     done
     if test ! -w frases.dat; then
         echo "Error: no se puede escribir frases.dat."
-    elif echo "$CATEGORIA_NUEVA:$FRASE_NUEVA" >> frases.dat; then
-        echo "Frase añadida."
-        leer_frases
     else
-        echo "Error al guardar la frase."; fi
+        LINEA=""
+        while IFS= read -r LINEA; do
+            LINEA=""
+        done < frases.dat
+        if test -n "$LINEA"; then
+            echo >> frases.dat; fi
+        if echo "$CATEGORIA_NUEVA:$FRASE_NUEVA" >> frases.dat; then
+            echo "Frase añadida."
+            leer_frases
+        else
+            echo "Error al guardar la frase."; fi; fi
 }
 function menu_frases {
     SALIR_FRASES=0
